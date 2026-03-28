@@ -22,7 +22,7 @@ client.on('ready', async () => {
             console.log("🔄 Update Leaderboard...");
 
             const channel = await client.channels.fetch(channelId);
-            if (!channel) return console.log("❌ Channel nicht gefunden");
+            if (!channel) return console.log("❌ channel not found");
 
             const data = await db.all();
 
@@ -40,7 +40,7 @@ client.on('ready', async () => {
                 description += `**#${i + 1}** ${user.username} — \`${top[i].value} msgs\`\n`;
             }
 
-            if (!description) description = "Keine Daten";
+            if (!description) description = "No data";
 
             const embed = new EmbedBuilder()
                 .setTitle("🏆 Leaderboard")
@@ -52,21 +52,22 @@ client.on('ready', async () => {
             if (!messageId) {
                 const msg = await channel.send({ embeds: [embed] });
                 await db.set("leaderboardMessage", msg.id);
-                console.log("📩 Neue Nachricht gesendet");
+                console.log("📩 new message sent");
+                
             } else {
                 try {
                     const msg = await channel.messages.fetch(messageId);
                     await msg.edit({ embeds: [embed] });
-                    console.log("✏️ Nachricht aktualisiert");
+                    console.log("✏️ message updated");
                 } catch {
                     const msg = await channel.send({ embeds: [embed] });
                     await db.set("leaderboardMessage", msg.id);
-                    console.log("♻️ Nachricht neu erstellt");
+                    console.log("♻️ message new created");
                 }
             }
 
         } catch (err) {
-            console.error("❌ Fehler:", err);
+            console.error("❌ Error:", err);
         }
 
     }, 30000); // alle 30 Sekunden
