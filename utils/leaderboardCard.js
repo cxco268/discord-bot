@@ -1,8 +1,8 @@
 const { createCanvas, loadImage } = require('canvas');
 
-async function generateLeaderboard(users, client) {
+async function generateLeaderboard(users) {
 
-    const canvas = createCanvas(900, 500);
+    const canvas = createCanvas(1000, 600);
     const ctx = canvas.getContext('2d');
 
     // Hintergrund
@@ -13,21 +13,21 @@ async function generateLeaderboard(users, client) {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 40px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Leaderboard', 450, 50);
+    ctx.fillText('Leaderboard', canvas.width / 2, 50);
 
-    if (users.length === 0) return canvas.toBuffer();
+    if (!users.length) return canvas.toBuffer();
 
     // 🥇 Platz 1
     const first = users[0];
     const avatar = await loadImage(`https://cdn.discordapp.com/avatars/${first.id}/${first.avatar}.png`);
 
-    const x = 450;
+    const x = canvas.width / 2;
     const y = 200;
     const size = 80;
 
     // Glow
     ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 40;
+    ctx.shadowBlur = 50;
 
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
@@ -40,7 +40,7 @@ async function generateLeaderboard(users, client) {
 
     // Username
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px sans-serif';
+    ctx.font = 'bold 26px sans-serif';
     ctx.fillText(first.username, x, y + 120);
 
     // Messages
@@ -48,7 +48,7 @@ async function generateLeaderboard(users, client) {
     ctx.font = '20px sans-serif';
     ctx.fillText(`${first.messages} Messages`, x, y + 150);
 
-    // Plätze 2–10
+    // Liste
     let startY = 100;
 
     for (let i = 1; i < users.length; i++) {
@@ -57,13 +57,13 @@ async function generateLeaderboard(users, client) {
         ctx.textAlign = 'left';
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = '18px sans-serif';
-        ctx.fillText(`#${i + 1} ${u.username}`, 50, startY);
+        ctx.font = '20px sans-serif';
+        ctx.fillText(`#${i + 1} ${u.username}`, 80, startY);
 
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText(`${u.messages} msgs`, 300, startY);
+        ctx.fillText(`${u.messages}`, 400, startY);
 
-        startY += 30;
+        startY += 35;
     }
 
     return canvas.toBuffer();
