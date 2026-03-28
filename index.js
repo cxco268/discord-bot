@@ -25,6 +25,10 @@ for (const file of commandFiles) {
   client.commands.set(command.name, command);
 }
 
+const fs = require('fs');
+
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+console.log("Gefundene Commands:", commandFiles);
 
 // ✅ Bot ready
 client.once("ready", () => {
