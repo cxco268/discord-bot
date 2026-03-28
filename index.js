@@ -13,10 +13,11 @@ const client = new Client({
 });
 
 // READY
-client.on('ready', () => {
+client.on('ready', async () => {
     console.log(`Bot ist online als ${client.user.tag}`);
 
-    const channelId = "1487375222092075109"; // 👈 ändern!
+    const channelId = "1487375222092075109";
+    const messageKey = "leaderboardMessage";
 
     setInterval(async () => {
 
@@ -26,45 +27,49 @@ client.on('ready', () => {
         const data = await db.all();
 
         const filtered = data
-            .filter(entry => entry.id.startsWith("messages_"))
+            .filter(e => e.id.startsWith("messages_"))
             .sort((a, b) => b.value - a.value)
             .slice(0, 10);
 
         const users = [];
 
-        for (let i = 0; i < filtered.length; i++) {
-            const userId = filtered[i].id.split("_")[1];
+        for (const entry of filtered) {
+            const userId = entry.id.split("_")[1];
             const user = await client.users.fetch(userId);
 
             users.push({
                 id: user.id,
                 username: user.username,
                 avatar: user.avatar,
-                messages: filtered[i].value
+                messages: entry.value
             });
         }
 
-        const buffer = await generateLeaderboard(users, client);
+        const buffer = await generateLeaderboard(users);
         const attachment = new AttachmentBuilder(buffer, { name: 'leaderboard.png' });
 
-        // alte Nachricht löschen & neu senden (einfacher)
-        const messages = await channel.messages.fetch({ limit: 10 });
-        const botMsg = messages.find(m => m.author.id === client.user.id);
+        let messageId = await db.get(messageKey);
 
-        if (botMsg) {
-            await botMsg.delete().catch(() => {});
+        if (!messageId) {
+            const msg = await channel.send({ files: [attachment] });
+            await db.set(messageKey, msg.id);
+        } else {
+            try {
+                const msg = await channel.messages.fetch(messageId);
+                await msg.edit({ files: [attachment] });
+            } catch {
+                const msg = await channel.send({ files: [attachment] });
+                await db.set(messageKey, msg.id);
+            }
         }
 
-        await channel.send({ files: [attachment] });
-
-    }, 60000); // jede Minute
+    }, 60000); // 1 Minute
 
 });
 
 // 📊 Nachrichten zählen
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
-
     await db.add(`messages_${message.author.id}`, 1);
 });
 
