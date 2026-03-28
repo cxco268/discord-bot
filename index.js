@@ -15,7 +15,7 @@ const client = new Client({
 client.on('ready', async () => {
     console.log(`✅ Bot online als ${client.user.tag}`);
 
-    const channelId = "DEINE_CHANNEL_ID"; // ❗ HIER ÄNDERN
+    const channelId = "1487375222092075109"; // ❗ HIER ÄNDERN
 
     setInterval(async () => {
         try {
