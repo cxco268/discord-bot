@@ -1,7 +1,6 @@
-const { generateLeaderboard } = require('./utils/leaderboardCard');
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
-const fs = require('fs');
+const { Client, GatewayIntentBits, AttachmentBuilder } = require('discord.js');
 const { QuickDB } = require("quick.db");
+const { generateLeaderboard } = require('./utils/leaderboardCard');
 
 const db = new QuickDB();
 
@@ -13,22 +12,11 @@ const client = new Client({
     ]
 });
 
-client.commands = new Collection();
-
-// Commands laden
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
-    client.commands.set(command.name, command);
-}
-
-// READY EVENT
-client.on('ready', async () => {
+// READY
+client.on('ready', () => {
     console.log(`Bot ist online als ${client.user.tag}`);
 
-    const channelId = "1487375222092075109"; // ✅ DEIN CHANNEL
-    const messageIdKey = "leaderboardMessage";
+    const channelId = "1487375222092075109"; // 👈 ändern!
 
     setInterval(async () => {
 
@@ -56,30 +44,21 @@ client.on('ready', async () => {
             });
         }
 
-        const buffer = await generateLeaderboard(users);
+        const buffer = await generateLeaderboard(users, client);
+        const attachment = new AttachmentBuilder(buffer, { name: 'leaderboard.png' });
 
-        let messageId = await db.get(messageIdKey);
+        // alte Nachricht löschen & neu senden (einfacher)
+        const messages = await channel.messages.fetch({ limit: 10 });
+        const botMsg = messages.find(m => m.author.id === client.user.id);
 
-        if (!messageId) {
-            const msg = await channel.send({
-                files: [{ attachment: buffer, name: "leaderboard.png" }]
-            });
-            await db.set(messageIdKey, msg.id);
-        } else {
-            try {
-                const msg = await channel.messages.fetch(messageId);
-                await msg.edit({
-                    files: [{ attachment: buffer, name: "leaderboard.png" }]
-                });
-            } catch {
-                const msg = await channel.send({
-                    files: [{ attachment: buffer, name: "leaderboard.png" }]
-                });
-                await db.set(messageIdKey, msg.id);
-            }
+        if (botMsg) {
+            await botMsg.delete().catch(() => {});
         }
 
-    }, 10000); // ⏱️ 10 Sekunden zum testen
+        await channel.send({ files: [attachment] });
+
+    }, 60000); // jede Minute
+
 });
 
 // 📊 Nachrichten zählen
@@ -88,27 +67,5 @@ client.on('messageCreate', async (message) => {
 
     await db.add(`messages_${message.author.id}`, 1);
 });
-
-// ⚙️ COMMAND HANDLER
-const prefix = "!";
-
-client.on('messageCreate', async message => {
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-    const args = message.content.slice(prefix.length).split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-    const command = client.commands.get(commandName);
-    if (!command) return;
-
-    try {
-        await command.execute(message, args);
-    } catch (error) {
-        console.error(error);
-        message.reply('❌ Error!');
-    }
-});
-
-console.log("TOKEN:", process.env.TOKEN);
 
 client.login(process.env.TOKEN);
