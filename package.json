@@ -12,7 +12,6 @@
   "type": "commonjs",
   "dependencies": {
     "better-sqlite3": "^12.8.0",
-    "canvas": "^2.11.2",
     "discord.js": "^14.0.0",
     "mongoose": "^9.3.3",
     "quick.db": "^9.0.0"
