@@ -1,3 +1,4 @@
+const { updateLeaderboard } = require("./leaderboardSystem");
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { QuickDB } = require("quick.db");
 
@@ -22,7 +23,7 @@ client.on('ready', async () => {
             console.log("🔄 Update Leaderboard...");
 
             const channel = await client.channels.fetch(channelId);
-            if (!channel) return console.log("❌ channel not found");
+            if (!channel) return console.log("❌ Channel nicht gefunden");
 
             const data = await db.all();
 
@@ -40,7 +41,7 @@ client.on('ready', async () => {
                 description += `**#${i + 1}** ${user.username} — \`${top[i].value} msgs\`\n`;
             }
 
-            if (!description) description = "No data";
+            if (!description) description = "Keine Daten";
 
             const embed = new EmbedBuilder()
                 .setTitle("🏆 Leaderboard")
@@ -52,22 +53,21 @@ client.on('ready', async () => {
             if (!messageId) {
                 const msg = await channel.send({ embeds: [embed] });
                 await db.set("leaderboardMessage", msg.id);
-                console.log("📩 new message sent");
-                
+                console.log("📩 Neue Nachricht gesendet");
             } else {
                 try {
                     const msg = await channel.messages.fetch(messageId);
                     await msg.edit({ embeds: [embed] });
-                    console.log("✏️ message updated");
+                    console.log("✏️ Nachricht aktualisiert");
                 } catch {
                     const msg = await channel.send({ embeds: [embed] });
                     await db.set("leaderboardMessage", msg.id);
-                    console.log("♻️ message new created");
+                    console.log("♻️ Nachricht neu erstellt");
                 }
             }
 
         } catch (err) {
-            console.error("❌ Error:", err);
+            console.error("❌ Fehler:", err);
         }
 
     }, 30000); // alle 30 Sekunden
