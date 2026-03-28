@@ -11,59 +11,71 @@ const client = new Client({
     ]
 });
 
+// BOT READY
 client.on('ready', async () => {
-    console.log(`Bot online als ${client.user.tag}`);
+    console.log(`✅ Bot online als ${client.user.tag}`);
 
-    const channelId = "DEIN_CHANNEL_ID";
-    const messageKey = "leaderboardMessage";
+    const channelId = "DEINE_CHANNEL_ID"; // ❗ HIER ÄNDERN
 
     setInterval(async () => {
+        try {
+            console.log("🔄 Update Leaderboard...");
 
-        const channel = await client.channels.fetch(channelId);
-        if (!channel) return;
+            const channel = await client.channels.fetch(channelId);
+            if (!channel) return console.log("❌ Channel nicht gefunden");
 
-        const data = await db.all();
+            const data = await db.all();
 
-        const top = data
-            .filter(e => e.id.startsWith("messages_"))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 10);
+            const top = data
+                .filter(e => e.id.startsWith("messages_"))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 10);
 
-        let description = "";
+            let description = "";
 
-        for (let i = 0; i < top.length; i++) {
-            const userId = top[i].id.split("_")[1];
-            const user = await client.users.fetch(userId);
+            for (let i = 0; i < top.length; i++) {
+                const userId = top[i].id.split("_")[1];
+                const user = await client.users.fetch(userId);
 
-            description += `**#${i + 1}** ${user.username} — \`${top[i].value} msgs\`\n`;
-        }
-
-        const embed = new EmbedBuilder()
-            .setTitle("🏆 Leaderboard")
-            .setColor("#38bdf8")
-            .setDescription(description || "Keine Daten");
-
-        let messageId = await db.get(messageKey);
-
-        if (!messageId) {
-            const msg = await channel.send({ embeds: [embed] });
-            await db.set(messageKey, msg.id);
-        } else {
-            try {
-                const msg = await channel.messages.fetch(messageId);
-                await msg.edit({ embeds: [embed] });
-            } catch {
-                const msg = await channel.send({ embeds: [embed] });
-                await db.set(messageKey, msg.id);
+                description += `**#${i + 1}** ${user.username} — \`${top[i].value} msgs\`\n`;
             }
+
+            if (!description) description = "Keine Daten";
+
+            const embed = new EmbedBuilder()
+                .setTitle("🏆 Leaderboard")
+                .setDescription(description)
+                .setColor("#5865F2");
+
+            let messageId = await db.get("leaderboardMessage");
+
+            if (!messageId) {
+                const msg = await channel.send({ embeds: [embed] });
+                await db.set("leaderboardMessage", msg.id);
+                console.log("📩 Neue Nachricht gesendet");
+            } else {
+                try {
+                    const msg = await channel.messages.fetch(messageId);
+                    await msg.edit({ embeds: [embed] });
+                    console.log("✏️ Nachricht aktualisiert");
+                } catch {
+                    const msg = await channel.send({ embeds: [embed] });
+                    await db.set("leaderboardMessage", msg.id);
+                    console.log("♻️ Nachricht neu erstellt");
+                }
+            }
+
+        } catch (err) {
+            console.error("❌ Fehler:", err);
         }
 
-    }, 60000);
-
+    }, 30000); // alle 30 Sekunden
 });
 
+// Nachrichten zählen
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
+
     await db.add(`messages_${message.author.id}`, 1);
 });
 
